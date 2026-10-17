@@ -32,8 +32,7 @@ class PaymentSuccessActivity : AppCompatActivity() {
 
         val receipt = Gson().fromJson(receiptJson, TransactionReceipt::class.java)
 
-        val endpoint = "https://dai.poa.network"
-        val web3 = Web3j.build(HttpService(endpoint))
+        val web3 = Wallet(this).getWeb3j()
 
         val transaction = web3.ethGetTransactionByHash(receipt.transactionHash).sendAsync().get().transaction.get()
 

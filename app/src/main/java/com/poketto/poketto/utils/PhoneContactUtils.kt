@@ -27,13 +27,13 @@ class PhoneContactUtils(context: Context) {
 
         var contactId = ""
 
-        if (cursor.moveToFirst()) {
+        if (cursor != null && cursor.moveToFirst()) {
             do {
                 contactId = cursor.getString(
-                    cursor
-                        .getColumnIndex(PhoneLookup._ID)
+                    cursor.getColumnIndex(PhoneLookup._ID)
                 )
             } while (cursor.moveToNext())
+            cursor.close()
         }
 
         return contactId
@@ -56,11 +56,12 @@ class PhoneContactUtils(context: Context) {
                 + "'", null, null)
 
             if (cursor != null) {
-                if (!cursor!!.moveToFirst()) {
+                val hasFirst = cursor.moveToFirst()
+                cursor.close()
+                if (!hasFirst) {
                     return null // no photo
                 }
-            }
-            else {
+            } else {
                 return null // error in cursor process
             }
 

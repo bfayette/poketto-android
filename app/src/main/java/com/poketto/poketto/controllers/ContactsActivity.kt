@@ -77,7 +77,7 @@ class ContactsActivity: AppCompatActivity() {
 
             val contactModel = filteredContactModelArrayList!!.get(position)
             val contact = Contact()
-            contact.address = address!!.toUpperCase()
+            contact.address = address!!.uppercase(java.util.Locale.ROOT)
             contact.name = contactModel.name
 
             if(contactModel.number != null) {

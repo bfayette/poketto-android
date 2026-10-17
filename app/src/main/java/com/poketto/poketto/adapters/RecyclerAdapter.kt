@@ -110,15 +110,18 @@ class RecyclerAdapter(private val transactions: ArrayList<DashboardTransactionVi
                     view.header_date_title.text = DateFormat.format("dd MMMM", dateTime).toString()
                 }
 
-            } else {
-                val formattedDaiString = String.format("%.2f", transaction!!.value!!.toDouble()/weiToDaiRate)
+            } else if (transaction != null) {
+                val txValue = transaction.value?.toDouble() ?: 0.0
+                val formattedDaiString = String.format(Locale.US, "%.2f", txValue / weiToDaiRate)
 
-                if(transaction.from == ownerAddress) {
-                    view.address.text = "${transaction!!.to!!.take(6)}..."
-                    view.amount.text = "$formattedDaiString"
+                if (transaction.from == ownerAddress) {
+                    val toAddressText = transaction.to ?: ""
+                    view.address.text = if (toAddressText.length >= 6) "${toAddressText.take(6)}..." else toAddressText
+                    view.amount.text = formattedDaiString
                     view.amount.setTextColor(ContextCompat.getColor(itemView.context, com.poketto.poketto.R.color.colorPrimaryDark))
                 } else {
-                    view.address.text = "${transaction!!.from!!.take(6)}..."
+                    val fromAddressText = transaction.from ?: ""
+                    view.address.text = if (fromAddressText.length >= 6) "${fromAddressText.take(6)}..." else fromAddressText
                     view.amount.text = "+ $formattedDaiString"
                     view.amount.setTextColor(ContextCompat.getColor(itemView.context, com.poketto.poketto.R.color.colorAccent))
                 }

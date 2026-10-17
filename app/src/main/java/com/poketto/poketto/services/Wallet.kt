@@ -3,7 +3,6 @@ package com.poketto.poketto.services
 import android.content.Context
 import android.util.Log
 import de.adorsys.android.securestoragelibrary.SecurePreferences
-import de.adorsys.android.securestoragelibrary.SecureStorageException
 import org.web3j.crypto.*
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
@@ -26,19 +25,33 @@ import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
 
-class Wallet(context: Context) {
+import com.poketto.poketto.models.Network
+
+class Wallet(
+    private val context: Context,
+    var network: Network = Network.GNOSIS,
+    private var customKeyManager: KeyManager? = null
+) {
+
+    val keyManager: KeyManager
+        get() = customKeyManager ?: LocalKeyManager(context)
+
+    companion object {
+        var mockWeb3j: Web3j? = null
+    }
 
     val GAS_PRICE = BigInteger.valueOf(1_000_000_000L)
     val GAS_LIMIT = BigInteger.valueOf(21000L)
     private val weiToDaiRate = 1000000000000000000
-    private var context: Context? = context
+
+    fun getWeb3j(): Web3j {
+        return mockWeb3j ?: Web3j.build(HttpService(network.rpcUrl))
+    }
 
     fun getAddress() : String? {
 
-        if(SecurePreferences.contains(context!!, "mnemonic")) {
-
-            val address = getCredentialsFromPrivateKey().address
-
+        val address = keyManager.getAddress()
+        if (address != null) {
             Log.d("getAddress", "address: $address")
             return address
         }
@@ -56,30 +69,27 @@ class Wallet(context: Context) {
         Log.d("generate", "mnemonic: $mnemonic")
 
         try {
-            SecurePreferences.setValue(context!!, "mnemonic", mnemonic)
-        } catch (e: SecureStorageException) {
+            SecurePreferences.setValue("mnemonic", mnemonic, context)
+        } catch (e: Exception) {
             handleException(e)
         }
     }
 
     fun importSeed(seed: String) : Boolean {
 
-        SecurePreferences.setValue(context!!, "mnemonic", seed)
+        SecurePreferences.setValue("mnemonic", seed, context)
         return false
     }
 
     fun exportSeed() : String? {
 
-        return SecurePreferences.getStringValue(context!!, "mnemonic", null)
+        return SecurePreferences.getStringValue("mnemonic", context, null)
     }
 
     fun balanceFrom(address: String) : Double {
 
-        // connect to node
-        val web3 = Web3j.build(HttpService("https://dai.poa.network"))
-
         // send asynchronous requests to get balance
-        val ethGetBalance = web3
+        val ethGetBalance = getWeb3j()
             .ethGetBalance(address, DefaultBlockParameterName.LATEST)
             .sendAsync()
             .get()
@@ -91,13 +101,13 @@ class Wallet(context: Context) {
         return dai
     }
 
-    private fun handleException(e: SecureStorageException) {
-        Log.e("handleException", e.message)
+    private fun handleException(e: Exception) {
+        Log.e("handleException", e.message ?: "SecureStorage error")
     }
 
     fun getCredentialsFromPrivateKey() : Credentials {
 
-        val mnemonic = SecurePreferences.getStringValue(context!!, "mnemonic", null)
+        val mnemonic = SecurePreferences.getStringValue("mnemonic", context, null)
         val seed = MnemonicUtils.generateSeed(mnemonic, null)
         val masterKeypair = Bip32ECKeyPair.generateKeyPair(seed)
         val path = intArrayOf(44 or HARDENED_BIT, 60 or HARDENED_BIT, 0 or HARDENED_BIT, 0, 0)
@@ -107,9 +117,7 @@ class Wallet(context: Context) {
 
     fun send(toAddress: String, value: String, message: String?, success: (result: TransactionReceipt) -> Unit, failure: (result: String) -> Unit) {
 
-        val endpoint = "https://dai.poa.network"
-        val web3 = Web3j.build(HttpService(endpoint))
-        val credentials = getCredentialsFromPrivateKey()
+        val web3 = getWeb3j()
 
         try {
 
@@ -128,8 +136,7 @@ class Wallet(context: Context) {
 
 
             val rawTransaction = RawTransaction.createTransaction(nonce, GAS_PRICE, gasLimit, toAddress, amountWei, extraData)
-            val signedMessage = TransactionEncoder.signMessage(rawTransaction, credentials)
-            val hexValue = Numeric.toHexString(signedMessage)
+            val hexValue = keyManager.signTransaction(rawTransaction, network.chainId)
 
             val ethSendTransaction = web3.ethSendRawTransaction(hexValue).send()
             val transactionHash = ethSendTransaction.transactionHash
