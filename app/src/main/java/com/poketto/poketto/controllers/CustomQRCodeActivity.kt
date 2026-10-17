@@ -46,12 +46,6 @@ class CustomQRCodeActivity : Activity(), OnQRCodeReadListener {
         if(!detectedQRCode) {
             Log.d("onQRCodeRead", "text: " + text)
             detectedQRCode = true
-//            val intent = Intent(intent)
-//            val b = Bundle()
-//            b.putString("address", text)
-//            intent.putExtras(b)
-//            startActivityForResult(intent, RESULT_OK)
-//            finishActivity(RESULT_OK)
             val resultIntent = Intent()
             resultIntent.putExtra("address", text)
             setResult(RESULT_OK, resultIntent)

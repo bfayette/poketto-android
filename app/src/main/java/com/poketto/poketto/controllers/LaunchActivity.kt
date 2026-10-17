@@ -51,7 +51,7 @@ class LaunchActivity: AppCompatActivity() {
             editor = preferences.edit()
             editor.putString("FirstRun", "1strun")
             editor.apply()
-            SecurePreferences.removeValue(this, "mnemonic")
+            SecurePreferences.removeValue("mnemonic", this)
         }
     }
 

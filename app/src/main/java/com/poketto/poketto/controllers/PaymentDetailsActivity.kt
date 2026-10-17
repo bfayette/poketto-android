@@ -103,8 +103,8 @@ class PaymentDetailsActivity: AppCompatActivity()  {
             sent_text_view.text = this.resources.getString(R.string.received)
         }
 
-        date_text_view.text = getDateTime(transaction.timeStamp!!)
-        hours_text_view.text = getHourTime(transaction.timeStamp)
+        date_text_view.text = getDateTime(transaction.timeStamp ?: "0")
+        hours_text_view.text = getHourTime(transaction.timeStamp ?: "0")
 
         if(transaction.displayName != null) {
             assign_address_button.text = this.resources.getString(R.string.reassign_address)

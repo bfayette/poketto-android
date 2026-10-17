@@ -33,8 +33,6 @@ import com.poketto.poketto.data.ContactsDAO
 import com.poketto.poketto.models.DashboardTransactionViewModel
 import com.poketto.poketto.models.Transaction
 import kotlinx.android.synthetic.main.activity_main.*
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.uiThread
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -191,10 +189,6 @@ class MainActivity : AppCompatActivity() {
             updateWallet()
         }
 
-//        val dialogButton = dialog.findViewById(R.id.dialogButtonOK) as Button
-//        dialogButton.setOnClickListener {
-//            dialog.dismiss()
-//        }
 
         dialog.show()
 
@@ -280,7 +274,7 @@ class MainActivity : AppCompatActivity() {
 
         val backupButton = dialog.findViewById(R.id.backup_layout) as LinearLayout
         backupButton.setOnClickListener {
-            val mnemonic = SecurePreferences.getStringValue(this, "mnemonic", null)
+            val mnemonic = SecurePreferences.getStringValue("mnemonic", this, null)
             val sendIntent: Intent = Intent().apply {
                 action = Intent.ACTION_SEND
                 putExtra(Intent.EXTRA_TEXT, mnemonic)
@@ -308,58 +302,54 @@ class MainActivity : AppCompatActivity() {
 
         val call = RetrofitInitializer().explorer().transactions("account", "txlist", address)
         call.enqueue(object: Callback<Transactions?> {
-            override fun onResponse(call: Call<Transactions?>?,
-                                    response: Response<Transactions?>?) {
-                response?.body()?.let {
-                    val transactions: Transactions = it
-                    Log.d("onResponse", "transactions: " + transactions.result)
-                    launching_view.visibility = View.INVISIBLE
-                    if(transactions.result.isEmpty()) {
-                        empty_state_view.visibility = View.VISIBLE
-                    } else {
-                        empty_state_view.visibility = View.INVISIBLE
-                    }
+            override fun onResponse(call: Call<Transactions?>,
+                                    response: Response<Transactions?>) {
+                val transactions = response.body()
+                val resultList = transactions?.result ?: arrayListOf()
+                launching_view.visibility = View.INVISIBLE
+                if(resultList.isEmpty()) {
+                    empty_state_view.visibility = View.VISIBLE
+                } else {
+                    empty_state_view.visibility = View.INVISIBLE
+                }
 
-                    val serializedTransactions = getSerializedTransactionsWithContactInfo(transactions.result, address)
-                    val reverseSerializedTransactions = serializedTransactions.reversed()
-                    val groupedTransactions = getGroupedTransactions(reverseSerializedTransactions)
-                    val transactionsViewModels = buildTransactionsViewModels(groupedTransactions)
+                val serializedTransactions = getSerializedTransactionsWithContactInfo(resultList, address)
+                val reverseSerializedTransactions = serializedTransactions.reversed()
+                val groupedTransactions = getGroupedTransactions(reverseSerializedTransactions)
+                val transactionsViewModels = buildTransactionsViewModels(groupedTransactions)
 
-
-                    var spentToday = 0F
-                    for(transaction in reverseSerializedTransactions) {
-                        if(transaction.from!!.toUpperCase() == ownerAddress.toUpperCase()) {
-                            val transactionTime = Calendar.getInstance()
-                            transactionTime.timeInMillis = transaction.timeStamp!!.toLong()*1000
-                            val now = Calendar.getInstance()
-                            if (now.get(Calendar.DATE) == transactionTime.get(Calendar.DATE)) {
-                                spentToday += transaction.value!!.toFloat()
-                            }
+                var spentToday = 0F
+                for(transaction in reverseSerializedTransactions) {
+                    if(transaction.from?.uppercase(Locale.ROOT) == ownerAddress.uppercase(Locale.ROOT)) {
+                        val transactionTime = Calendar.getInstance()
+                        transactionTime.timeInMillis = (transaction.timeStamp ?: "0").toLong() * 1000
+                        val now = Calendar.getInstance()
+                        if (now.get(Calendar.DATE) == transactionTime.get(Calendar.DATE)) {
+                            spentToday += (transaction.value ?: "0").toFloat()
                         }
                     }
-                    val formattedDaiString = String.format("%.2f", spentToday / weiToDaiRate)
-                    spent_today_value!!.text = formattedDaiString
+                }
+                val formattedDaiString = String.format(Locale.US, "%.2f", spentToday / weiToDaiRate)
+                spent_today_value!!.text = formattedDaiString
 
+                runOnUiThread {
 
-                    runOnUiThread {
+                    transactionsList.clear()
+                    transactionsList.addAll(reverseSerializedTransactions)
 
-                        transactionsList.clear()
-                        transactionsList.addAll(reverseSerializedTransactions)
+                    dashboardTransactionsList.clear()
+                    dashboardTransactionsList.addAll(transactionsViewModels)
 
-                        dashboardTransactionsList.clear()
-                        dashboardTransactionsList.addAll(transactionsViewModels)
-
-                        adapter.notifyItemInserted(dashboardTransactionsList.size)
-                        adapter.notifyDataSetChanged()
-                        swipe_refresh.isRefreshing = false
-                    }
+                    adapter.notifyDataSetChanged()
+                    swipe_refresh.isRefreshing = false
                 }
             }
 
-            override fun onFailure(call: Call<Transactions?>?,
-                                   t: Throwable?) {
-                Log.d("onFailure", "transactions: " + t?.localizedMessage)
+            override fun onFailure(call: Call<Transactions?>,
+                                   t: Throwable) {
+                Log.d("onFailure", "transactions: " + t.localizedMessage)
                 launching_view.visibility = View.INVISIBLE
+                swipe_refresh.isRefreshing = false
             }
         }
         )
@@ -422,11 +412,11 @@ class MainActivity : AppCompatActivity() {
 
         for(transaction in transactions) {
             var othersAddress = transaction.to
-            if(transaction.to!!.toUpperCase() == ownerAddress.toUpperCase()) {
-                othersAddress = transaction.from!!.toUpperCase()
+            if(transaction.to?.uppercase(Locale.ROOT) == ownerAddress.uppercase(Locale.ROOT)) {
+                othersAddress = transaction.from?.uppercase(Locale.ROOT)
             }
 
-            val contact = contactsDAO!!.getContactBy(othersAddress!!)
+            val contact = if (othersAddress != null) contactsDAO!!.getContactBy(othersAddress) else null
             if(contact != null) {
                 transaction.displayName = contact.name
                 if(contact.avatar_url != null) {

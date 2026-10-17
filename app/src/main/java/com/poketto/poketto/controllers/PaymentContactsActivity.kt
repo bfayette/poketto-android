@@ -23,6 +23,7 @@ import com.poketto.poketto.data.ContactsDAO
 import com.poketto.poketto.models.Transactions
 import com.poketto.poketto.utils.PhoneContactUtils
 import kotlinx.android.synthetic.main.activity_payment_contacts.searchBar
+import java.util.Locale
 
 const val CAMERA_PERMISSION = 1001
 
@@ -193,8 +194,8 @@ class PaymentContactsActivity : AppCompatActivity() {
             fromTransactions.add(transaction.from!!)
         }
 
-        toTransactions = ArrayList(toTransactions.toList().filterNot { it.toUpperCase() == ownerAddress.toUpperCase() })
-        fromTransactions = ArrayList(fromTransactions.toList().filterNot { it.toUpperCase() == ownerAddress.toUpperCase() })
+        toTransactions = ArrayList(toTransactions.toList().filterNot { it.uppercase(Locale.ROOT) == ownerAddress.uppercase(Locale.ROOT) })
+        fromTransactions = ArrayList(fromTransactions.toList().filterNot { it.uppercase(Locale.ROOT) == ownerAddress.uppercase(Locale.ROOT) })
 
         val allTransactions = toTransactions
         allTransactions.addAll(fromTransactions)
@@ -213,10 +214,10 @@ class PaymentContactsActivity : AppCompatActivity() {
                 val paymentContact = addContact(transaction)
                 paymentContactsArray.add(paymentContact)
             } else {
-                var filteredContacts = paymentContactsArray.filter { it.address!!.toUpperCase() == transaction.toUpperCase() }
+                var filteredContacts = paymentContactsArray.filter { it.address?.uppercase(Locale.ROOT) == transaction.uppercase(Locale.ROOT) }
                 if(filteredContacts.isEmpty()) {
-                    val contact = ContactsDAO(this).getContactBy(transaction.toUpperCase())
-                    filteredContacts = paymentContactsArray.filter { it.address!!.toUpperCase() == contact?.address?.toUpperCase() }
+                    val contact = ContactsDAO(this).getContactBy(transaction.uppercase(Locale.ROOT))
+                    filteredContacts = paymentContactsArray.filter { it.address?.uppercase(Locale.ROOT) == contact?.address?.uppercase(Locale.ROOT) }
                     if(filteredContacts.isEmpty()) {
                         val paymentContact = addContact(transaction)
                         paymentContactsArray.add(paymentContact)
@@ -233,10 +234,10 @@ class PaymentContactsActivity : AppCompatActivity() {
                 val paymentContact = addContact(transaction)
                 popularContactsArray.add(paymentContact)
             } else {
-                var filteredContacts = popularContactsArray.filter { it.address!!.toUpperCase() == transaction.toUpperCase() }
+                var filteredContacts = popularContactsArray.filter { it.address?.uppercase(Locale.ROOT) == transaction.uppercase(Locale.ROOT) }
                 if(filteredContacts.isEmpty()) {
-                    val contact = ContactsDAO(this).getContactBy(transaction.toUpperCase())
-                    filteredContacts = popularContactsArray.filter { it.address!!.toUpperCase() == contact?.address?.toUpperCase() }
+                    val contact = ContactsDAO(this).getContactBy(transaction.uppercase(Locale.ROOT))
+                    filteredContacts = popularContactsArray.filter { it.address?.uppercase(Locale.ROOT) == contact?.address?.uppercase(Locale.ROOT) }
                     if(filteredContacts.isEmpty()) {
                         val paymentContact = addContact(transaction)
                         popularContactsArray.add(paymentContact)
@@ -288,7 +289,7 @@ class PaymentContactsActivity : AppCompatActivity() {
     fun addContact(address: String): Contact {
         val paymentContact = Contact()
 
-        val contact = ContactsDAO(this).getContactBy(address.toUpperCase())
+        val contact = ContactsDAO(this).getContactBy(address.uppercase(Locale.ROOT))
         if (contact != null) {
             paymentContact.address = address
             paymentContact.name = contact.name

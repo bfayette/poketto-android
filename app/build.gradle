@@ -29,6 +29,9 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
     namespace 'com.poketto.poketto'
 }
 
@@ -41,19 +44,20 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     implementation 'org.web3j:core:4.2.0-android'
     implementation 'com.android.support:multidex:1.0.3'
-    implementation 'de.adorsys.android:securestoragelibrary:1.1.0'
+    implementation 'com.github.adorsys:secure-storage-android:0.0.2'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.github.kenglxn.QRGen:android:3.0.1'
-    implementation 'org.jetbrains.anko:anko-common:0.9'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.makeramen:roundedimageview:2.3.0'
-    implementation ('com.dlazaro66.qrcodereaderview:qrcodereaderview:2.0.3@aar'){
+    implementation ('com.github.dlazaro66:QRCodeReaderView:2.0.3'){
         transitive = true
     }
     implementation 'org.apache.commons:commons-lang3:3.4'
     implementation "com.android.support:support-emoji-bundled:28.0.0"
     implementation "com.android.support:support-emoji:28.0.0"
     testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-core:3.12.4'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:3.12.13'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

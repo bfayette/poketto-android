@@ -10,8 +10,6 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.*
 import com.poketto.poketto.services.Wallet
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.uiThread
 import com.google.gson.Gson
 import com.poketto.poketto.data.Contact
 import kotlinx.android.synthetic.main.activity_payment_details.address_text_view
@@ -181,7 +179,7 @@ class PaymentSendActivity : AppCompatActivity() {
 
     private fun setMaxValueWithTransactionCost(transactionCost: Float) {
 
-        val maxAmount = String.format("%f", balance-transactionCost)
+        val maxAmount = String.format(java.util.Locale.US, "%f", balance-transactionCost)
         amountEditText!!.setText(maxAmount)
     }
 
@@ -192,11 +190,11 @@ class PaymentSendActivity : AppCompatActivity() {
         doAsync {
 
             val amountValue = amountEditText!!.text.toString().replace(",", ".")
-            var message : String? = null
+            var noteMessage : String? = null
             if(note_edit_text.text.isNotEmpty()) {
-                message = note_edit_text.text.toString()
+                noteMessage = note_edit_text.text.toString()
             }
-            Wallet(this@PaymentSendActivity).send(mAddress, amountValue, message, success = {
+            Wallet(this@PaymentSendActivity).send(mAddress, amountValue, noteMessage, success = {
 
                 val transactionReceipt = it
 
@@ -209,14 +207,12 @@ class PaymentSendActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
 
-            }, failure = {
-
-                val message = it
+            }, failure = { errorMessage ->
 
                 uiThread {
 
                     hideLoadingSpinner()
-                    Toast.makeText(this@PaymentSendActivity, message, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@PaymentSendActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }
             })
         }
